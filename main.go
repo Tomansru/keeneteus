@@ -1,9 +1,9 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -15,26 +15,25 @@ import (
 
 var (
 	cpuLoad = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name:        "cpu_load",
-		Help:        "Current load of the CPU",
+		Name: "cpu_load",
+		Help: "Current load of the CPU",
 	})
 	memUsage = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name:        "mem_usage",
-		Help:        "Current mem usage",
+		Name: "mem_usage",
+		Help: "Current mem usage",
 	}, []string{"type"})
 	uptimeStat = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name:        "uptime",
-		Help:        "Uptime metric",
+		Name: "uptime",
+		Help: "Uptime metric",
 	})
 )
 
 func main() {
-	var kUrl = flag.String("i", "", "Keenetic api url")
-	var kUser = flag.String("u", "", "Keenetic login")
-	var kPasswd = flag.String("p", "", "Keenetic password")
-	flag.Parse()
+	var kUrl, kUser, kPasswd = os.Getenv("KeeneticUrl"),
+		os.Getenv("KeeneticUser"),
+		os.Getenv("KeeneticPassword")
 
-	var kApi = keenetic_api.NewApi(*kUrl, *kUser, *kPasswd)
+	var kApi = keenetic_api.NewApi(kUrl, kUser, kPasswd)
 
 	var err error
 	if err = kApi.Auth(); err != nil {
