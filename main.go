@@ -38,7 +38,7 @@ func main() {
 	var err error
 	if err = kApi.Auth(); err != nil {
 		fmt.Println(err)
-		return
+		os.Exit(1)
 	}
 
 	prometheus.MustRegister(cpuLoad, memUsage, uptimeStat)
@@ -48,7 +48,7 @@ func main() {
 			var i keenetic_api.InterfaceStat
 			if err = kApi.Metric(&i); err != nil {
 				fmt.Println(err)
-				return
+				os.Exit(1)
 			}
 		}
 	}()
@@ -58,7 +58,7 @@ func main() {
 			var m keenetic_api.Metrics
 			if err = kApi.Metric(&m); err != nil {
 				fmt.Println(err)
-				return
+				os.Exit(1)
 			}
 
 			var i, _ = strconv.Atoi(m.Show.System.Uptime)
@@ -74,5 +74,6 @@ func main() {
 	http.Handle("/metrics", promhttp.Handler())
 	if err = http.ListenAndServe(":2112", nil); err != nil {
 		fmt.Println(err)
+		os.Exit(1)
 	}
 }
