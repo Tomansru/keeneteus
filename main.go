@@ -48,6 +48,7 @@ func main() {
 	prometheus.MustRegister(cpuLoad, memUsage, uptimeStat, networkStat)
 
 	go func() {
+		var eth string
 		for range time.Tick(time.Second * 2) {
 			var i keenetic_api.InterfaceStat
 			if err = kApi.Metric(&i); err != nil {
@@ -56,9 +57,9 @@ func main() {
 			}
 
 			for k, v := range i.Show.Interface.Stat {
-				var intf = i.GetInterfaces(k)
-				networkStat.WithLabelValues(intf, "rx").Add(float64(v.Rxbytes))
-				networkStat.WithLabelValues(intf, "tx").Add(float64(v.Txbytes))
+				eth = i.GetInterfaces(k)
+				networkStat.WithLabelValues(eth, "rx").Add(float64(v.Rxbytes))
+				networkStat.WithLabelValues(eth, "tx").Add(float64(v.Txbytes))
 			}
 		}
 	}()
