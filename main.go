@@ -26,7 +26,7 @@ var (
 		Name: "keeneteus_uptime",
 		Help: "Uptime metric",
 	})
-	networkStat = prometheus.NewCounterVec(prometheus.CounterOpts{
+	networkStat = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "keeneteus_network",
 		Help: "Used traffic per interface",
 	}, []string{"interface", "rxtx"})
@@ -58,8 +58,8 @@ func main() {
 
 			for k, v := range i.Show.Interface.Stat {
 				eth = i.GetInterfaces(k)
-				networkStat.WithLabelValues(eth, "rx").Add(float64(v.Rxbytes))
-				networkStat.WithLabelValues(eth, "tx").Add(float64(v.Txbytes))
+				networkStat.WithLabelValues(eth, "rx").Set(float64(v.Rxbytes))
+				networkStat.WithLabelValues(eth, "tx").Set(float64(v.Txbytes))
 			}
 		}
 	}()
