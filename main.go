@@ -26,6 +26,10 @@ var (
 		Name: "keeneteus_uptime",
 		Help: "Uptime metric",
 	})
+	networkStat = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "keeneteus_network",
+		Help: "Used traffic per interface",
+	}, []string{"interface", "rxtx"})
 )
 
 func main() {
@@ -41,7 +45,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	prometheus.MustRegister(cpuLoad, memUsage, uptimeStat)
+	prometheus.MustRegister(cpuLoad, memUsage, uptimeStat, networkStat)
 
 	go func() {
 		for range time.Tick(time.Second * 2) {
@@ -49,6 +53,12 @@ func main() {
 			if err = kApi.Metric(&i); err != nil {
 				fmt.Println(err)
 				os.Exit(1)
+			}
+
+			for k, v := range i.Show.Interface.Stat {
+				var intf = i.GetInterfaces(k)
+				networkStat.WithLabelValues(intf, "rx").Add(float64(v.Rxbytes))
+				networkStat.WithLabelValues(intf, "tx").Add(float64(v.Txbytes))
 			}
 		}
 	}()

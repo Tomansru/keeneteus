@@ -13,32 +13,32 @@ import (
 )
 
 const (
-	authPath = "/auth"
-	loginPath = "/login"
+	authPath      = "/auth"
+	loginPath     = "/login"
 	dashboardPath = "/dashboard"
-	rciPath = "/rci/"
+	rciPath       = "/rci/"
 )
 
 var errBadCode = errors.New("keenetic return bad status code")
 
 type api struct {
 	endpoint string
-	login string
+	login    string
 	password string
 
 	cl http.Client
 
 	ndmChallenge string
-	ndmRealm string
-	cookie []*http.Cookie
+	ndmRealm     string
+	cookie       []*http.Cookie
 }
 
 func NewApi(endpoint string, login string, password string) *api {
 	return &api{
 		endpoint: endpoint,
-		login: login,
+		login:    login,
 		password: password,
-		cl: http.Client{},
+		cl:       http.Client{},
 	}
 }
 
@@ -84,15 +84,15 @@ func (a *api) getAuth() error {
 	switch rs.StatusCode {
 	case http.StatusOK:
 		a.cookie = append(a.cookie, &http.Cookie{
-			Name: "_authorized",
+			Name:  "_authorized",
 			Value: "admin",
-			Path: "/",
-			Raw: "_authorized=admin; Path=/",
+			Path:  "/",
+			Raw:   "_authorized=admin; Path=/",
 		}, &http.Cookie{
-			Name: "sysmode",
+			Name:  "sysmode",
 			Value: "router",
-			Path: "/",
-			Raw: "sysmode=router; Path=/",
+			Path:  "/",
+			Raw:   "sysmode=router; Path=/",
 		})
 		return nil
 	case http.StatusUnauthorized:
@@ -113,7 +113,7 @@ type AuthJson struct {
 // getAuth авторизация в keenetic
 func (a *api) doAuth() error {
 	var m5 = md5.New()
-	m5.Write([]byte(a.login+":"+a.ndmRealm+":"+a.password))
+	m5.Write([]byte(a.login + ":" + a.ndmRealm + ":" + a.password))
 
 	var sh256 = sha256.New()
 	sh256.Write([]byte(a.ndmChallenge))
@@ -128,7 +128,7 @@ func (a *api) doAuth() error {
 	b.Grow(s.Len())
 
 	_ = json.NewEncoder(b).Encode(&AuthJson{
-		Login: a.login,
+		Login:    a.login,
 		Password: s.String(),
 	})
 
@@ -229,6 +229,18 @@ func (i *InterfaceStat) GetRqBody() io.Reader {
 
 func (i *InterfaceStat) Unmarshal(b io.Reader) error {
 	return json.NewDecoder(b).Decode(i)
+}
+
+func (i *InterfaceStat) GetInterfaces(k int) string {
+	var m = map[int]string{
+		0: "GigabitEthernet0/Vlan4",
+		1: "GigabitEthernet1",
+		2: "Wireguard0",
+	}
+	if v, ok := m[k]; ok {
+		return v
+	}
+	return ""
 }
 
 type Metrics struct {
