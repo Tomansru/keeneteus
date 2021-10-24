@@ -15,15 +15,15 @@ import (
 
 var (
 	cpuLoad = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "cpu_load",
+		Name: "keeneteus_cpu_load",
 		Help: "Current load of the CPU",
 	})
 	memUsage = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "mem_usage",
+		Name: "keeneteus_mem_usage",
 		Help: "Current mem usage",
 	}, []string{"type"})
 	uptimeStat = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "uptime",
+		Name: "keeneteus_uptime",
 		Help: "Uptime metric",
 	})
 )
@@ -72,7 +72,7 @@ func main() {
 	}()
 
 	http.Handle("/metrics", promhttp.Handler())
-	if err = http.ListenAndServe(":2112", nil); err != nil {
+	if err = http.ListenAndServe("0.0.0.0:2112", nil); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
