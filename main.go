@@ -87,7 +87,7 @@ func main() {
 					if v2.Attribute == "" || len(v2.Data) == 0 {
 						break
 					}
-					devicesStat.WithLabelValues(dev, v2.Attribute[:2]).Add(float64(v2.Data[len(v2.Data)-1].V))
+					devicesStat.WithLabelValues(dev, v2.Attribute[:2]).Add(float64(v2.Data[0].V))
 				}
 			}
 
