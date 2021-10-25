@@ -30,6 +30,14 @@ var (
 		Name: "keeneteus_network",
 		Help: "Used traffic per interface",
 	}, []string{"interface", "rxtx"})
+	devicesStat = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "keeneteus_devices",
+		Help: "Used traffic per devices",
+	}, []string{"device"})
+	devicesRssiStat = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "keeneteus_devices_rssi",
+		Help: "Used traffic per devices",
+	}, []string{"device"})
 )
 
 func main() {
@@ -45,35 +53,45 @@ func main() {
 		os.Exit(1)
 	}
 
-	prometheus.MustRegister(cpuLoad, memUsage, uptimeStat, networkStat)
+	prometheus.MustRegister(cpuLoad, memUsage, uptimeStat, networkStat, devicesStat, devicesRssiStat)
 
 	go func() {
-		var eth string
-		for range time.Tick(time.Second * 2) {
-			var i keenetic_api.InterfaceStat
+		var upt int
+		var i keenetic_api.InterfaceStat
+		i.SetInterfaces([]keenetic_api.Eth{
+			{Name: "DOM.RU", Code: "GigabitEthernet0/Vlan4"},
+			{Name: "Mishek.NET", Code: "GigabitEthernet1"},
+			{Name: "WGHetzner", Code: "Wireguard0"}})
+		i.DeviceCount = 5
+		var m keenetic_api.Metrics
+		for range time.Tick(time.Second * 4) {
 			if err = kApi.Metric(&i); err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 			}
 
-			for k, v := range i.Show.Interface.Stat {
-				eth = i.GetInterfaces(k)
-				networkStat.WithLabelValues(eth, "rx").Set(float64(v.Rxbytes))
-				networkStat.WithLabelValues(eth, "tx").Set(float64(v.Txbytes))
+			for _, v := range i.Show.Interface.Stat {
+				networkStat.WithLabelValues(v.InterfaceName, "rx").Set(float64(v.Rxbytes))
+				networkStat.WithLabelValues(v.InterfaceName, "tx").Set(float64(v.Txbytes))
 			}
-		}
-	}()
 
-	go func() {
-		for range time.Tick(time.Second * 4) {
-			var m keenetic_api.Metrics
+			for _, v := range i.Show.Ip.Hotspot.Summary.Host {
+				devicesStat.WithLabelValues(v.Name).Set(float64(v.Sumbytes))
+				devicesStat.WithLabelValues(v.Name).Set(float64(v.Sumbytes))
+			}
+
 			if err = kApi.Metric(&m); err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 			}
 
-			var i, _ = strconv.Atoi(m.Show.System.Uptime)
-			uptimeStat.Set(float64(i))
+			for _, v := range m.Show.Ip.Hotspot.Host {
+				devicesRssiStat.WithLabelValues(v.Name).Set(float64(v.Rssi))
+				devicesRssiStat.WithLabelValues(v.Name).Set(float64(v.Rssi))
+			}
+
+			upt, _ = strconv.Atoi(m.Show.System.Uptime)
+			uptimeStat.Set(float64(upt))
 			cpuLoad.Set(float64(m.Show.System.Cpuload))
 			memUsage.WithLabelValues("total").Set(float64(m.Show.System.Memtotal))
 			memUsage.WithLabelValues("cache").Set(float64(m.Show.System.Memcache))
