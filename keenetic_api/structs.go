@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"strconv"
 )
 
 type InterfaceStat struct {
+	Devices       []Eth  `json:"-"`
 	Interfaces    []Eth  `json:"-"`
 	InterfacesStr string `json:"-"`
-	DeviceCount   int    `json:"-"`
 
 	Show struct {
 		Interface struct {
@@ -36,16 +35,20 @@ type InterfaceStat struct {
 		} `json:"interface"`
 		Ip struct {
 			Hotspot struct {
-				Summary struct {
-					T    int `json:"t"`
-					Host []struct {
-						Active   bool   `json:"active,omitempty"`
-						Name     string `json:"name,omitempty"`
-						Mac      string `json:"mac,omitempty"`
-						Sumbytes int    `json:"sumbytes"`
-						Type     string `json:"type,omitempty"`
-					} `json:"host"`
-				} `json:"summary"`
+				Chart struct {
+					Bar []struct {
+						Mac  string `json:"mac,omitempty"`
+						Bars []struct {
+							Attribute string `json:"attribute"`
+							Data      []struct {
+								T int `json:"t"`
+								V int `json:"v"`
+							} `json:"data"`
+						} `json:"bars"`
+						Multicast bool `json:"multicast,omitempty"`
+						Others    bool `json:"others,omitempty"`
+					} `json:"bar"`
+				} `json:"chart"`
 			} `json:"hotspot"`
 		} `json:"ip"`
 	} `json:"show"`
@@ -58,8 +61,12 @@ func (i *InterfaceStat) GetRqBody() io.Reader {
 			i.InterfacesStr += `{"name":"` + i.Interfaces[k].Code + `"},`
 		}
 		i.InterfacesStr = i.InterfacesStr[:len(i.InterfacesStr)-1]
-		i.InterfacesStr += `]},"ip":{"hotspot":{"summary":{"attribute":"sumbytes","count":` +
-			strconv.Itoa(i.DeviceCount) + `,"detail":0}}}}}`
+		i.InterfacesStr += `]},"ip":{"hotspot":{"chart":{"items":"`
+		for k := range i.Devices {
+			i.InterfacesStr += i.Devices[k].Code + `,`
+		}
+		i.InterfacesStr = i.InterfacesStr[:len(i.InterfacesStr)-1]
+		i.InterfacesStr += `","detail":0,"attributes":"rxbytes,txbytes"}}}}}`
 	}
 	return bytes.NewBufferString(i.InterfacesStr)
 }
@@ -87,6 +94,18 @@ func (i *InterfaceStat) SetInterfaces(interfaces []Eth) {
 func (i *InterfaceStat) GetInterfaceName(k int) string {
 	if len(i.Interfaces) > k {
 		return i.Interfaces[k].Name
+	}
+	return ""
+}
+
+// SetDevices Set interfaces for monitoring
+func (i *InterfaceStat) SetDevices(interfaces []Eth) {
+	i.Devices = interfaces
+}
+
+func (i *InterfaceStat) GetDeviceName(k int) string {
+	if len(i.Devices) > k {
+		return i.Devices[k].Name
 	}
 	return ""
 }

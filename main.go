@@ -33,7 +33,7 @@ var (
 	devicesStat = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "keeneteus_devices",
 		Help: "Used traffic per devices",
-	}, []string{"device"})
+	}, []string{"device", "rxtx"})
 	devicesRssiStat = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "keeneteus_devices_rssi",
 		Help: "Used traffic per devices",
@@ -56,15 +56,21 @@ func main() {
 	prometheus.MustRegister(cpuLoad, memUsage, uptimeStat, networkStat, devicesStat, devicesRssiStat)
 
 	go func() {
+		var dev string
 		var upt int
+		var m keenetic_api.Metrics
 		var i keenetic_api.InterfaceStat
 		i.SetInterfaces([]keenetic_api.Eth{
 			{Name: "DOM.RU", Code: "GigabitEthernet0/Vlan4"},
 			{Name: "Mishek.NET", Code: "GigabitEthernet1"},
 			{Name: "WGHetzner", Code: "Wireguard0"}})
-		i.DeviceCount = 5
-		var m keenetic_api.Metrics
-		for range time.Tick(time.Second * 4) {
+		i.SetDevices([]keenetic_api.Eth{
+			{Name: "StanislavPC", Code: "18:c0:4d:64:4c:1e"},
+			{Name: "MacBook 2015", Code: "a8:66:7f:2e:4a:d2"},
+			{Name: "OnePlus6T", Code: "c0:ee:fb:4c:60:fd"},
+			{Name: "Multicast", Code: "multicast"},
+			{Name: "Others", Code: "others"}})
+		for range time.Tick(time.Second * 3) {
 			if err = kApi.Metric(&i); err != nil {
 				fmt.Println(err)
 				os.Exit(1)
@@ -75,9 +81,14 @@ func main() {
 				networkStat.WithLabelValues(v.InterfaceName, "tx").Set(float64(v.Txbytes))
 			}
 
-			for _, v := range i.Show.Ip.Hotspot.Summary.Host {
-				devicesStat.WithLabelValues(v.Name).Set(float64(v.Sumbytes))
-				devicesStat.WithLabelValues(v.Name).Set(float64(v.Sumbytes))
+			for k, v := range i.Show.Ip.Hotspot.Chart.Bar {
+				dev = i.GetDeviceName(k)
+				for _, v2 := range v.Bars {
+					if v2.Attribute == "" || len(v2.Data) == 0 {
+						break
+					}
+					devicesStat.WithLabelValues(dev, v2.Attribute[:2]).Add(float64(v2.Data[len(v2.Data)-1].V))
+				}
 			}
 
 			if err = kApi.Metric(&m); err != nil {
