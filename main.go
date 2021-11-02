@@ -63,7 +63,8 @@ func main() {
 		i.SetInterfaces([]keenetic_api.Eth{
 			{Name: "DOM.RU", Code: "GigabitEthernet0/Vlan4"},
 			{Name: "Mishek.NET", Code: "GigabitEthernet1"},
-			{Name: "WGHetzner", Code: "Wireguard0"}})
+			{Name: "WGHetzner", Code: "Wireguard0"},
+			{Name: "OfficeVPN", Code: "OpenVPN0"}})
 		i.SetDevices([]keenetic_api.Eth{
 			{Name: "StanislavPC", Code: "18:c0:4d:64:4c:1e"},
 			{Name: "MacBook 2015", Code: "a8:66:7f:2e:4a:d2"},
